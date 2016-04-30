@@ -1,18 +1,23 @@
 from lxml import etree
+import codecs
+import re
 
 wikiFile = "enwiki-20160407-pages-articles.xml"
+outFile = "articles.txt"
 def main():
-    with open("out.txt","w") as outfile:
+    with codecs.open(outFile,"w","utf-8") as out:
+        wikiRE = re.compile(r"^(((Wikipedia)|(Category)|(Template)|(File)|(Portal)):)|(.+\(disambiguation\)\s*$)")
         total = 0
         context = etree.iterparse(wikiFile, events=("start","end"))
         context = iter(context)
         event, root = next(context)
         for event, element in context:
-            if element.text and event == "start" and element.tag == "{http://www.mediawiki.org/xml/export-0.10/}title":
+            if event == "start" and element.tag == "{http://www.mediawiki.org/xml/export-0.10/}title" and element.text and not wikiRE.match(element.text):
                 total += 1
-                outfile.write("{}\n".format(element.text.encode("utf-8")))
+                out.write("{}:{}\n".format(total,element.text))
             root.clear()
-        outfile.write("{}\n".format(total))
+        out.write("{} total articles\n".format(total))
+        out.close()
         print("{} total articles".format(total))
 
 if __name__ == "__main__":
