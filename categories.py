@@ -14,16 +14,17 @@ def main():
     event, root = next(context)
     for event, element in context:
         if event == "end" and element.tag == "{http://www.mediawiki.org/xml/export-0.10/}page":
-            for child in element.iterdescendants():
-                if child.tag == "{http://www.mediawiki.org/xml/export-0.10/}title" and "Category:" in child.text:
-                    for c in element.iterdescendants():
-                        if c.tag == "{http://www.mediawiki.org/xml/export-0.10/}text":
-                            if c.text:
-                                total += 1
-                                out.write(idify(child.text))
-                                for m in categoryRE.findall(c.text):
-                                    out.write("," + idify(m))
-                                out.write("\n")
+            ns = element.find("{http://www.mediawiki.org/xml/export-0.10/}ns")
+            title = element.find("{http://www.mediawiki.org/xml/export-0.10/}title")
+            rev = element.find("{http://www.mediawiki.org/xml/export-0.10/}revision")
+            if rev is not None and title is not None and ns is not None and ns.text == "0":
+                content = rev.find("{http://www.mediawiki.org/xml/export-0.10/}text")
+                if content is not None and "#REDIRECT" not in content.text:
+                    total += 1
+                    out.write(title.text)
+                    for i in categoryRE.findall(content.text):
+                        out.write(", " + i)
+                    out.write("\n")
             element.clear()
         root.clear()
     out.write("{} total categories\n".format(total))
