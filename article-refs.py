@@ -2,10 +2,10 @@ from lxml import etree
 import re
 import datetime
 import codecs
-from wikiUtil import idify, categoryRE
+from wikiUtil import idify, categoryRE, refRE, wikiRE
 
 wikiFile = "enwiki-20160407-pages-articles.xml"
-outFile = "{}_categories.txt".format(datetime.datetime.now().strftime("%Y-%m-%d %H-%M"))
+outFile = "{}_article-refs.csv".format(datetime.datetime.now().strftime("%Y-%m-%d %H-%M"))
 def main():
     out = codecs.open(outFile,"w","utf-8")
     total = 0
@@ -17,18 +17,26 @@ def main():
             ns = element.find("{http://www.mediawiki.org/xml/export-0.10/}ns")
             title = element.find("{http://www.mediawiki.org/xml/export-0.10/}title")
             rev = element.find("{http://www.mediawiki.org/xml/export-0.10/}revision")
-            if rev is not None and title is not None and ns is not None and ns.text == "14":
+            if rev is not None and title is not None and ns is not None and ns.text == "0":
                 content = rev.find("{http://www.mediawiki.org/xml/export-0.10/}text")
-                if content is not None and content.text is not None and "#REDIRECT" not in content.text:
+                if content is not None and "#REDIRECT" not in content.text:
                     total += 1
                     out.write(title.text)
-                    for i in categoryRE.findall(content.text):
-                        out.write(", " + i)
+                    refs = {}
+                    for i in refRE.findall(content.text):
+                        for j in i:
+                            if len(j) > 0:
+                                if j in refs:
+                                    refs[j] += 1
+                                else:
+                                    refs[j] = 1
+                    for i in refs:
+                        out.write(", " + i + ": " + str(refs[i]))
                     out.write("\n")
             element.clear()
         root.clear()
-    out.write("{} total categories\n".format(total))
-    print("{} total categories".format(total))
+    out.write("{} total articles\n".format(total))
+    print("{} total articles".format(total))
     out.close()
 
 
