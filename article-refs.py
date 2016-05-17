@@ -2,6 +2,7 @@ from lxml import etree
 import re
 import datetime
 import codecs
+import json
 from wikiUtil import idify, categoryRE, refRE, wikiRE
 
 wikiFile = "enwiki-20160407-pages-articles.xml"
@@ -14,27 +15,19 @@ def main():
     event, root = next(context)
     for event, element in context:
         if event == "end" and element.tag == "{http://www.mediawiki.org/xml/export-0.10/}page":
-            ns = element.find("{http://www.mediawiki.org/xml/export-0.10/}ns")
-            title = element.find("{http://www.mediawiki.org/xml/export-0.10/}title")
-            rev = element.find("{http://www.mediawiki.org/xml/export-0.10/}revision")
-            if rev is not None and title is not None and ns is not None and ns.text == "0":
-                content = rev.find("{http://www.mediawiki.org/xml/export-0.10/}text")
-                if content is not None and "#REDIRECT" not in content.text:
-                    total += 1
-                    out.write(title.text)
-                    refs = {}
-                    for i in refRE.findall(content.text):
-                        for j in i:
-                            if len(j) > 0:
-                                if j in refs:
-                                    refs[j] += 1
-                                else:
-                                    refs[j] = 1
-                    for i in refs:
-                        out.write(", " + i + ": " + str(refs[i]))
-                    out.write("\n")
+            elms = {}
+            for child in element.iterdescendants():
+                if child.tag == "{http://www.mediawiki.org/xml/export-0.10/}ns":
+                    elms["ns"] = child.text
+                elif child.tag == "{http://www.mediawiki.org/xml/export-0.10/}title":
+                    elms["title"] = child.text
+                elif child.tag == "{http://www.mediawiki.org/xml/export-0.10/}text":
+                    elms["text"] = child.text
+            if elms.get("ns") == "0" and elms.get("title") and elms.get("text") and "#REDIRECT" not in elms["text"]:
+                total += 1
+                out.write(json.dumps({elms["title"]: refRE.findall(elms['text'])}) + "\n")
             element.clear()
-        root.clear()
+            root.clear()
     out.write("{} total articles\n".format(total))
     print("{} total articles".format(total))
     out.close()
