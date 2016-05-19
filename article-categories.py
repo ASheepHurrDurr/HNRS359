@@ -3,6 +3,7 @@ import re
 import datetime
 import codecs
 from wikiUtil import idify, categoryRE, refRE, wikiRE
+import json
 
 wikiFile = "enwiki-20160407-pages-articles.xml"
 outFile = "{}_article-categories.csv".format(datetime.datetime.now().strftime("%Y-%m-%d %H-%M"))
@@ -19,12 +20,9 @@ def main():
             rev = element.find("{http://www.mediawiki.org/xml/export-0.10/}revision")
             if rev is not None and title is not None and ns is not None and ns.text == "0":
                 content = rev.find("{http://www.mediawiki.org/xml/export-0.10/}text")
-                if content is not None and "#REDIRECT" not in content.text:
+                if content is not None and "#redirect" not in content.text.lower():
                     total += 1
-                    out.write(title.text)
-                    for i in categoryRE.findall(content.text):
-                        out.write(", " + i)
-                    out.write("\n")
+                    out.write(json.dumps({title.text: categoryRE.findall(content.text)}) + "\n")
             element.clear()
         root.clear()
     out.write("{} total articles\n".format(total))

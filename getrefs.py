@@ -7,7 +7,7 @@ def main():
     total = 0
     articles = 0
     noRefs = 0
-    with open("2016-05-17_11-43_article-refs.csv", "r", encoding="utf-8") as infile:
+    with open("2016-05-19 10-00_article-refs.csv", "r", encoding="utf-8") as infile:
         for line in infile:
             try:
                 j = json.loads(line.strip())
